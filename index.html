@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>練習場所 予約システム</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <h1>練習場所 予約システム</h1>
+
+    <div id="calendar-container">
+        <table id="reservation-table">
+            <thead>
+                <tr>
+                    <th>時間</th>
+                    <th>月曜日</th>
+                    <th>火曜日</th>
+                    <th>水曜日</th>
+                    <th>木曜日</th>
+                    <th>金曜日</th>
+                    <th>土曜日</th>
+                    <th>日曜日</th>
+                </tr>
+            </thead>
+            <tbody>
+                </tbody>
+        </table>
+    </div>
+
+    <script>
+        const startHour = 10;
+        const endHour = 20;
+        const tableBody = document.querySelector("#reservation-table tbody");
+
+        // 予約表のマスを生成する処理
+        for (let hour = startHour; hour < endHour; hour++) {
+            const row = document.createElement("tr");
+            const timeCell = document.createElement("th");
+            timeCell.textContent = `${hour}:00 - ${hour + 1}:00`;
+            row.appendChild(timeCell);
+
+            for (let day = 0; day < 7; day++) {
+                const dataCell = document.createElement("td");
+                dataCell.classList.add("time-slot");
+                dataCell.id = `${day}-${hour}`;
+                row.appendChild(dataCell);
+            }
+            tableBody.appendChild(row);
+        }
+
+        const timeSlots = document.querySelectorAll('.time-slot');
+
+        // --- ここからがステップ3で追加・変更したコードです ---
+
+        // ▼▼▼ 1. 予約を保存する関数を追加 ▼▼▼
+        function saveReservations() {
+            const reservations = {}; // 空のオブジェクトを用意
+            timeSlots.forEach(slot => {
+                // 'booked'クラスを持つ（＝予約されている）マスだけを対象にする
+                if (slot.classList.contains('booked')) {
+                    // reservationsオブジェクトに、マスのIDをキー、予約名を値として保存
+                    reservations[slot.id] = slot.textContent;
+                }
+            });
+            // オブジェクトをJSON形式の文字列に変換してlocalStorageに保存
+            localStorage.setItem('reservations', JSON.stringify(reservations));
+        }
+
+        // ▼▼▼ 2. 保存された予約を読み込む関数を追加 ▼▼▼
+        function loadReservations() {
+            // localStorageから予約データを取得
+            const savedReservations = localStorage.getItem('reservations');
+            if (savedReservations) {
+                // JSON形式の文字列をオブジェクトに変換
+                const reservations = JSON.parse(savedReservations);
+                // オブジェクトの各エントリーに対して処理を実行
+                Object.entries(reservations).forEach(([id, name]) => {
+                    const slot = document.getElementById(id);
+                    if (slot) {
+                        slot.textContent = name;
+                        slot.classList.add('booked');
+                    }
+                });
+            }
+        }
+
+        // 各マスに対して、クリックイベントを追加
+        timeSlots.forEach(slot => {
+            slot.addEventListener('click', () => {
+                if (slot.classList.contains('booked')) {
+                    const confirmDelete = confirm(`予約を削除しますか？\n予定: ${slot.textContent}`);
+                    if (confirmDelete) {
+                        slot.textContent = '';
+                        slot.classList.remove('booked');
+                        saveReservations(); // ▼▼▼ 3. 削除後にも保存処理を呼ぶ ▼▼▼
+                    }
+                } else {
+                    const name = prompt("予約者名を入力してください:");
+                    if (name) {
+                        slot.textContent = name;
+                        slot.classList.add('booked');
+                        saveReservations(); // ▼▼▼ 4. 予約後にも保存処理を呼ぶ ▼▼▼
+                    }
+                }
+            });
+        });
+        
+        // ▼▼▼ 5. ページが読み込まれた時に、保存されたデータを読み込む ▼▼▼
+        loadReservations();
+
+    </script>
+
+</body>
+</html>
